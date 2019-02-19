@@ -1,0 +1,10 @@
+<ul>
+	{% for question in questions %}
+		<li>
+			<a href="/question/{{ question.id }}/"> {{ question }} </a>
+		</li>
+	{% endfor %}
+</ul>
+{% if next is not None %}
+<a href="?page={{ next }}"> next page </a>
+{% endif %}
