@@ -22,7 +22,7 @@ def question_page(request, id):
 
 def question_list_all(request):
     questions = Question.objects.new()
-    limit = 1
+    limit = 10
     paginator = Paginator(questions, limit)
 
     page = request.GET.get('page', 1)
@@ -34,3 +34,19 @@ def question_list_all(request):
         next_page = None
 
     return render(request, 'question_list.html', {'questions': page.object_list, 'page': page, 'next': next_page})
+
+
+def question_list_popular(request):
+    questions = Question.objects.popular()
+    limit = 10
+    paginator = Paginator(questions, limit)
+
+    page = request.GET.get('page', 1)
+    page = paginator.page(page)
+
+    try:
+        next_page = page.next_page_number()
+    except EmptyPage:
+        next_page = None
+
+    return render(request, 'question_list_popular.html', {'questions': page.object_list, 'page': page, 'next': next_page})
