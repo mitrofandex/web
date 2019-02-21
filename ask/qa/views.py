@@ -19,13 +19,13 @@ def question_page(request, id):
     # or question = get_object_or_404(Question, id=id)
 
     if request.method == 'POST':
-        form = AnswerField(request.POST)
+        form = AnswerForm(request.POST)
         if form.is_valid():
-            answer = Answer(**form.cleaned_data, author_id=1)
+            answer = Answer(**form.cleaned_data, question=question, author_id=1)
             answer.save()
             return HttpResponseRedirect('/question/{}/'.format(id))
     else:
-        form = AnswerField()
+        form = AnswerForm()
 
     answers = question.answer_set.all()
 
