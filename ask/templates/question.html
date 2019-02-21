@@ -5,3 +5,9 @@
     <li> {{ answer }} </li>
 {% endfor %}
 </ol>
+
+<form action="/question/{{ question.id }}/" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <button type="submit"> Submit </button>
+</form>

@@ -1,8 +1,10 @@
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator, EmptyPage
+
 from .models import *
+from .forms import *
 
 
 def test(request, *args, **kwargs):
@@ -16,13 +18,23 @@ def question_page(request, id):
         raise Http404
     # or question = get_object_or_404(Question, id=id)
 
+    if request.method == 'POST':
+        form = AnswerField(request.POST)
+        if form.is_valid():
+            answer = Answer(**form.cleaned_data, author_id=1)
+            answer.save()
+            return HttpResponseRedirect('/question/{}/'.format(id))
+    else:
+        form = AnswerField()
+
     answers = question.answer_set.all()
-    return render(request, 'question.html', {'question': question, 'answers': answers})
+
+    return render(request, 'question.html', {'question': question, 'answers': answers, 'form': form})
 
 
 def question_list_all(request):
     questions = Question.objects.new()
-    limit = 10
+    limit = 2
     paginator = Paginator(questions, limit)
 
     page = request.GET.get('page', 1)
@@ -33,7 +45,7 @@ def question_list_all(request):
     except EmptyPage:
         next_page = None
 
-    return render(request, 'question_list.html', {'questions': page.object_list, 'page': page, 'next': next_page})
+    return render(request, 'question_list.html', {'questions': page.object_list, 'next': next_page})
 
 
 def question_list_popular(request):
@@ -50,3 +62,16 @@ def question_list_popular(request):
         next_page = None
 
     return render(request, 'question_list_popular.html', {'questions': page.object_list, 'page': page, 'next': next_page})
+
+
+def question_add(request):
+    if request.method == 'POST':
+        form = AskForm(request.POST)
+        if form.is_valid():
+            question = Question(**form.cleaned_data, author_id=1)
+            question.save()
+            return HttpResponseRedirect('/question/{}/'.format(question.id))
+    else:
+        form = AskForm()
+
+    return render(request, 'question_add.html', {'form': form})
