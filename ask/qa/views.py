@@ -12,9 +12,14 @@ def test(request, *args, **kwargs):
 
 
 def question_page(request, id):
-    sessid = request.COOKIES['sessionid']
-    session = Session.objects.get(key=sessid)
-    user = session.user
+    error = ''
+    try:
+        sessid = request.COOKIES['sessionid']
+        session = Session.objects.get(key=sessid)
+        user = session.user
+    except KeyError:
+        session = None
+        user = None
     try:
         question = Question.objects.get(id=id)
     except ObjectDoesNotExist:
@@ -23,16 +28,19 @@ def question_page(request, id):
 
     if request.method == 'POST':
         form = AnswerForm(request.POST)
-        if form.is_valid():
-            answer = Answer(**form.cleaned_data, question=question, author=user)
-            answer.save()
-            return HttpResponseRedirect('/question/{}/'.format(id))
+        if user is None:
+            error = 'You need to log in to post answers'
+        else:
+            if form.is_valid():
+                answer = Answer(question=question, author=user, **form.cleaned_data)
+                answer.save()
+                return HttpResponseRedirect('/question/{}/'.format(id))
     else:
         form = AnswerForm()
 
     answers = question.answer_set.all()
 
-    return render(request, 'question.html', {'question': question, 'answers': answers, 'form': form})
+    return render(request, 'question.html', {'question': question, 'answers': answers, 'form': form, 'error': error})
 
 
 def question_list_all(request):
@@ -68,19 +76,27 @@ def question_list_popular(request):
 
 
 def question_add(request):
-    sessid = request.COOKIES['sessionid']
-    session = Session.objects.get(key=sessid)
-    user = session.user
+    error = ''
+    try:
+        sessid = request.COOKIES['sessionid']
+        session = Session.objects.get(key=sessid)
+        user = session.user
+    except KeyError:
+        session = None
+        user = None
     if request.method == 'POST':
         form = AskForm(request.POST)
-        if form.is_valid():
-            question = Question(**form.cleaned_data, author=user)
-            question.save()
-            return HttpResponseRedirect('/question/{}/'.format(question.id))
+        if user is None:
+            error = 'You need to log in to post questions'
+        else:
+            if form.is_valid():
+                question = Question(author=user, **form.cleaned_data)
+                question.save()
+                return HttpResponseRedirect('/question/{}/'.format(question.id))
     else:
         form = AskForm()
 
-    return render(request, 'question_add.html', {'form': form})
+    return render(request, 'question_add.html', {'form': form, 'error': error})
 
 
 def random_string():
