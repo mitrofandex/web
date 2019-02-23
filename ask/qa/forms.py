@@ -8,3 +8,14 @@ class AskForm(forms.Form):
 
 class AnswerForm(forms.Form):
     text = forms.CharField()
+
+
+class SignupForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField()
+    email = forms.EmailField()
+
+
+class LoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField()

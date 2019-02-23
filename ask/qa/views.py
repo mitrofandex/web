@@ -12,6 +12,9 @@ def test(request, *args, **kwargs):
 
 
 def question_page(request, id):
+    sessid = request.COOKIES['sessionid']
+    session = Session.objects.get(key=sessid)
+    user = session.user
     try:
         question = Question.objects.get(id=id)
     except ObjectDoesNotExist:
@@ -21,7 +24,7 @@ def question_page(request, id):
     if request.method == 'POST':
         form = AnswerForm(request.POST)
         if form.is_valid():
-            answer = Answer(**form.cleaned_data, question=question, author_id=1)
+            answer = Answer(**form.cleaned_data, question=question, author=user)
             answer.save()
             return HttpResponseRedirect('/question/{}/'.format(id))
     else:
@@ -65,13 +68,78 @@ def question_list_popular(request):
 
 
 def question_add(request):
+    sessid = request.COOKIES['sessionid']
+    session = Session.objects.get(key=sessid)
+    user = session.user
     if request.method == 'POST':
         form = AskForm(request.POST)
         if form.is_valid():
-            question = Question(**form.cleaned_data, author_id=1)
+            question = Question(**form.cleaned_data, author=user)
             question.save()
             return HttpResponseRedirect('/question/{}/'.format(question.id))
     else:
         form = AskForm()
 
     return render(request, 'question_add.html', {'form': form})
+
+
+def random_string():
+    import string
+    import random
+
+    s = string.ascii_letters + string.digits
+    result = ''.join(random.choice(s) for _ in range(random.randint(10, 20)))
+    return result
+
+
+def do_login(username, password):
+    try:
+        user = User.objects.get(username=username)
+    except ObjectDoesNotExist:
+        return None
+
+    if user.password != password:
+        return None
+
+    session = Session.objects.create(key=random_string(), user=user)
+    return session.key
+
+
+def signup(request):
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            new_user = User(username=username, password=password)
+            new_user.save()
+
+            sessid = do_login(username, password)
+            response = HttpResponseRedirect('/')
+            response.set_cookie('sessionid', sessid)
+            return response
+    else:
+        form = SignupForm()
+
+    return render(request, 'signup.html', {'form': form})
+
+
+def login(request):
+    error = ''
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            sessid = do_login(username, password)
+
+            if sessid:
+                response = HttpResponseRedirect('/')
+                response.set_cookie('sessionid', sessid)
+                return response
+            else:
+                error = 'Wrong login / password'
+    else:
+        form = LoginForm()
+
+    return render(request, 'login.html', {'form': form, 'error': error})
